@@ -32,180 +32,180 @@ import java.util.Hashtable;
  * @author lenny
  */
 public class ServerCommands {
-    
+
     private ServerThread serverThread;
     private Connection conn = null;
     private Hashtable<String, ResultSet> results = new Hashtable<String, ResultSet>();
 
     /** Creates a new instance of ServerCommands */
     public ServerCommands(ServerThread serverThread) {
-        
+
         this.serverThread = serverThread;
     }
-    
+
     /**
      * Connect to a JDBC data source.
-     * @param cmd 
+     * @param cmd
      */
     public void connect(String[] cmd) {
-        
+
         if (conn == null && cmd.length == 4) {
-            
+
             try {
-                
+
                 conn = DriverManager.getConnection(cmd[1], cmd[2], cmd[3]);
                 serverThread.write("ok");
-                
+
             } catch (SQLException ex) {
-               
-                Utils.log("error", "SQL exception encountered: " + ex.getMessage());           
-                serverThread.write("ex");
-            }
-            
-        } else {
-            Utils.log("error", "Unexpected error encountered"); 
-            serverThread.write("err");
-        }
-    }
-    
-    /**
-     * Execute an SQL query.
-     * @param cmd 
-     */
-    public void exec(String[] cmd) {
-        
-        if (conn != null && cmd.length >= 2) {
-            
-            try {
-                
-                PreparedStatement st = conn.prepareStatement(cmd[1]);
-                st.setFetchSize(1);
-                
-                for (int i = 2; i < cmd.length; i ++) {
-                    
-                    try {
-                        
-                        st.setDouble(i - 1, Double.parseDouble(cmd[i]));
-                        
-                    } catch (NumberFormatException e) {
-                        
-                        st.setString(i - 1, cmd[i]);
-                    }
-                }
-                
-                if (st.execute()) {
-                    
-                    String id = Utils.makeUID();
-                    results.put(id, st.getResultSet());
-                    serverThread.write("ok", id);
-                    
-                } else {
-                    
-                    serverThread.write("ok", st.getUpdateCount());
-                }
-                
-            } catch (SQLException ex) {
-     
+
                 Utils.log("error", "SQL exception encountered: " + ex.getMessage());
                 serverThread.write("ex");
             }
-            
+
         } else {
-           
             Utils.log("error", "Unexpected error encountered");
             serverThread.write("err");
         }
     }
-    
+
+    /**
+     * Execute an SQL query.
+     * @param cmd
+     */
+    public void exec(String[] cmd) {
+
+        if (conn != null && cmd.length >= 2) {
+
+            try {
+
+                PreparedStatement st = conn.prepareStatement(cmd[1]);
+                st.setFetchSize(1);
+
+                for (int i = 2; i < cmd.length; i ++) {
+
+                    try {
+
+                        st.setDouble(i - 1, Double.parseDouble(cmd[i]));
+
+                    } catch (NumberFormatException e) {
+
+                        st.setString(i - 1, cmd[i]);
+                    }
+                }
+
+                if (st.execute()) {
+
+                    String id = Utils.makeUID();
+                    results.put(id, st.getResultSet());
+                    serverThread.write("ok", id);
+
+                } else {
+
+                    serverThread.write("ok", st.getUpdateCount());
+                }
+
+            } catch (SQLException ex) {
+
+                Utils.log("error", "SQL exception encountered: " + ex.getMessage());
+                serverThread.write("ex");
+            }
+
+        } else {
+
+            Utils.log("error", "Unexpected error encountered");
+            serverThread.write("err");
+        }
+    }
+
     /**
      * Fetch a row from a ResultSet.
-     * @param cmd 
+     * @param cmd
      */
     public void fetch_array(String[] cmd) {
-        
+
         if (conn != null && cmd.length == 2) {
-            
+
             ResultSet rs = results.get(cmd[1]);
-            
+
             if (rs != null) {
-                
+
                 try {
-                    
+
                     if (rs.next()) {
-                        
+
                         ResultSetMetaData rsmd = rs.getMetaData();
                         int cn = rsmd.getColumnCount();
-                        
+
                         serverThread.write("ok", cn);
-                        
+
                         for (int i = 1; i <= cn; i ++)
                             serverThread.write(rsmd.getColumnName(i), rs.getString(i));
-                        
+
                     } else {
-                        
+
                         serverThread.write("end");
                     }
-                    
+
                 } catch (SQLException ex) {
-                   
+
                     Utils.log("error", "SQL exception encountered: " + ex.getMessage());
                     serverThread.write("ex");
                 }
-                
+
             } else {
-               
+
                 Utils.log("error", "Unexpected error encountered");
                 serverThread.write("err");
             }
-            
+
         } else {
-           
+
             Utils.log("error", "Unexpected error encountered");
             serverThread.write("err");
         }
     }
-    
+
     /**
      * Release a ResultSet.
-     * @param cmd 
+     * @param cmd
      */
     public void free_result(String[] cmd) {
-        
+
         if (conn != null && cmd.length == 2) {
-            
+
             ResultSet rs = (ResultSet)results.get(cmd[1]);
-            
+
             if (rs != null) {
-                
+
                 results.remove(cmd[1]);
                 serverThread.write("ok");
-                
+
             } else {
-               
+
                 Utils.log("error", "Unexpected error encountered");
                 serverThread.write("err");
             }
-            
+
         } else {
-           
+
             Utils.log("error", "Unexpected error encountered");
             serverThread.write("err");
         }
     }
-    
+
     /**
      * Release the JDBC connection.
      */
     public void close() {
-        
+
         if (conn != null) {
-            
+
             try {
-                
+
                 conn.close();
-                
+
             } catch (SQLException ex) {
-                
+
                 Utils.log("error", "could not close JDBC connection");
             }
         }

@@ -23,21 +23,21 @@
  * @author lenny
  */
 public class Service {
-    
+
     Server server = null;
-    
+
     public void init(String[] args){
 
         server = new Server(args[0], args[1]);
     }
-    
+
     public void start() {
-        
+
         server.start();
     }
-    
+
     public void stop() {
-        
+
         server.shutdown();
     }
 
@@ -52,4 +52,3 @@ public class Service {
         service.start();
     }
 }
-

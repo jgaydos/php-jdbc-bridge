@@ -22,7 +22,7 @@
  */
 
 public class Base64 {
-    
+
 // Mapping table from 6-bit nibbles to Base64 characters.
     private static char[]    map1 = new char[64];
     static {
@@ -31,13 +31,13 @@ public class Base64 {
         for (char c='a'; c<='z'; c++) map1[i++] = c;
         for (char c='0'; c<='9'; c++) map1[i++] = c;
         map1[i++] = '+'; map1[i++] = '/'; }
-    
+
 // Mapping table from Base64 characters to 6-bit nibbles.
     private static byte[]    map2 = new byte[128];
     static {
         for (int i=0; i<map2.length; i++) map2[i] = -1;
         for (int i=0; i<64; i++) map2[map1[i]] = (byte)i; }
-    
+
     /**
      * Encodes a string into Base64 format.
      * No blanks or line breaks are inserted.
@@ -46,7 +46,7 @@ public class Base64 {
      */
     public static String encodeString(String s) {
         return new String(encode(s.getBytes())); }
-    
+
     /**
      * Encodes a byte array into Base64 format.
      * No blanks or line breaks are inserted.
@@ -55,7 +55,7 @@ public class Base64 {
      */
     public static char[] encode(byte[] in) {
         return encode(in,in.length); }
-    
+
     /**
      * Encodes a byte array into Base64 format.
      * No blanks or line breaks are inserted.
@@ -82,7 +82,7 @@ public class Base64 {
             out[op] = op < oDataLen ? map1[o2] : '='; op++;
             out[op] = op < oDataLen ? map1[o3] : '='; op++; }
         return out; }
-    
+
     /**
      * Decodes a string from Base64 format.
      * @param s  a Base64 String to be decoded.
@@ -91,7 +91,7 @@ public class Base64 {
      */
     public static String decodeString(String s) {
         return new String(decode(s)); }
-    
+
     /**
      * Decodes a byte array from Base64 format.
      * @param s  a Base64 String to be decoded.
@@ -100,7 +100,7 @@ public class Base64 {
      */
     public static byte[] decode(String s) {
         return decode(s.toCharArray()); }
-    
+
     /**
      * Decodes a byte array from Base64 format.
      * No blanks or line breaks are allowed within the Base64 encoded data.
@@ -136,8 +136,8 @@ public class Base64 {
             if (op<oLen) out[op++] = (byte)o1;
             if (op<oLen) out[op++] = (byte)o2; }
         return out; }
-    
+
     private Base64() {
     }
-    
+
 } // end class Base64Coder
