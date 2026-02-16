@@ -109,7 +109,7 @@ public class ServerThread extends Thread {
         
         out.println(
                 Base64.encodeString(k) + " " +
-                Base64.encodeString(new Integer(v).toString())
+                Base64.encodeString(String.valueOf(v))
                 );
     }
 
@@ -117,8 +117,8 @@ public class ServerThread extends Thread {
         
         out.println(
                 Base64.encodeString(k) + " " +
-                Base64.encodeString(new Integer(v1).toString()) + " " +
-                Base64.encodeString(new Integer(v2).toString())
+                Base64.encodeString(String.valueOf(v1)) + " " +
+                Base64.encodeString(String.valueOf(v2))
                 );
     }
 }

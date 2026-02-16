@@ -10,7 +10,7 @@ and the JDBC database.
 
 ## Requirements
 
-* Java 1.6+
+* Java 21+
 * PHP 7.0+
 * A JDBC driver
 
