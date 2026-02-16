@@ -20,88 +20,143 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+declare(strict_types=1);
+
 class PJBridge
 {
+	private mixed $sock = null;
 
-	private $sock;
-	private $jdbc_enc;
-	private $app_enc;
-
-	public $last_search_length = 0;
-
+    /**
+     * Initializes a new PJBridge instance and opens a socket connection to the
+     * server.
+     *
+     * @param string $host The hostname of the server to connect to.
+     * @param int $port The port number of the server to connect to.
+     * @param string $jdbcEncoding The character encoding used by the JDBC driver.
+     * @param string $appEncoding The character encoding used by the application.
+     */
 	public function __construct(
 		string $host = 'localhost',
 		int $port = 4444,
-		string $jdbc_enc = 'ascii',
-		string $app_enc = 'ascii'
+		private string $jdbcEncoding = 'ascii',
+		private string $appEncoding = 'ascii'
 	) {
 		$this->sock = fsockopen($host, $port);
-		$this->jdbc_enc = $jdbc_enc;
-		$this->app_enc = $app_enc;
 	}
 
+    /**
+     * Closes the socket connection to the server when the object is destroyed.
+     */
 	public function __destruct()
 	{
 		fclose($this->sock);
 	}
 
-	private function parse_reply()
+    /**
+     * Parses a reply from the server, converting from JDBC encoding to
+     * application encoding and base64 decoding.
+     *
+     * @return array The reply from the server, as an array of tokens.
+     */
+	private function parseReply(): array
 	{
 		$il = explode(' ', fgets($this->sock));
 		$ol = [];
 
-		foreach ($il as $value)
-			$ol[] = iconv($this->jdbc_enc, $this->app_enc, base64_decode($value));
+		foreach ($il as $value) {
+			$ol[] = iconv(
+                $this->jdbcEncoding,
+                $this->appEncoding,
+                base64_decode($value)
+            );
+        }
 
 		return $ol;
 	}
 
-	private function exchange(array $cmd_a)
+    /**
+     * Encodes a command as base64 and sends it to the server, then parses the
+     * reply.
+     *
+     * @param array $cmdA The command to send, as an array of tokens.
+     * @return array The reply from the server, as an array of tokens.
+     */
+	private function exchange(array $cmdA): array
 	{
-		$cmd_s = '';
+		$cmdS = '';
 
-		foreach ($cmd_a as $tok)
-			$cmd_s .= base64_encode(iconv($this->app_enc, $this->jdbc_enc, $tok)).' ';
+		foreach ($cmdA as $tok) {
+			$cmdS .= base64_encode(
+                iconv($this->appEncoding, $this->jdbcEncoding, $tok)
+            ).' ';
+        }
 
-		$cmd_s = substr($cmd_s, 0, -1)."\n";
-		fwrite($this->sock, $cmd_s);
-		return $this->parse_reply();
+		$cmdS = substr($cmdS, 0, -1)."\n";
+		fwrite($this->sock, $cmdS);
+		return $this->parseReply();
 	}
 
-	public function connect(string $url, string $user, string $pass)
-	{
+    /**
+     * Connects to the database using the provided JDBC URL, username, and password.
+     *
+     * @param string $url The JDBC URL to connect to.
+     * @param string $user The username to use for authentication.
+     * @param string $pass The password to use for authentication.
+     * @return bool True if the connection was successful, false otherwise.
+     */
+	public function connect(
+        #[\SensitiveParameter] string $url,
+        #[\SensitiveParameter] string $user,
+        #[\SensitiveParameter] string $pass
+    ): bool {
 		$reply = $this->exchange(['connect', $url, $user, $pass]);
 
-		if ($reply[0] === 'ok')
+		if ($reply[0] === 'ok') {
 			return true;
+        }
 		return false;
 	}
 
-	public function exec(string $query)
+    /**
+     * Executes a SQL query on the connected database.
+     *
+     * @param string $query The SQL query to execute.
+     * @return string|false The result of the query, or false on failure.
+     */
+	public function exec(string $query): string|false
 	{
-		$cmd_a = ['exec', $query];
+		$cmdA = ['exec', $query];
 
 		if (func_num_args() > 1) {
 			$args = func_get_args();
-			for ($i = 1; $i < func_num_args(); ++$i)
-				$cmd_a[] = $args[$i];
+			for ($i = 1; $i < func_num_args(); ++$i) {
+				$cmdA[] = $args[$i];
+            }
 		}
 
-		$reply = $this->exchange($cmd_a);
+		$reply = $this->exchange($cmdA);
 
-		if ($reply[0] === 'ok')
+		if ($reply[0] === 'ok') {
 			return $reply[1];
+        }
 		return false;
 	}
 
-	public function fetch_array(string $res)
+    /**
+     * Fetches a row from the result set identified by the provided result set
+     * identifier.
+     *
+     * @param string $res The result set identifier.
+     * @return array|false The fetched row as an associative array, or false on failure.
+     */
+	public function fetchArray(string $res): array|false
 	{
 		$reply = $this->exchange(['fetch_array', $res]);
 
 		if ($reply[0] === 'ok') {
 			$row = [];
 			for ($i = 0; $i < $reply[1]; ++$i) {
-				$col = $this->parse_reply($this->sock);
+				$col = $this->parseReply();
 				$row[$col[0]] = $col[1];
 			}
 			return $row;
@@ -109,12 +164,19 @@ class PJBridge
 		return false;
 	}
 
-	public function free_result(string $res)
+    /**
+    * Frees the result set identified by the provided result set identifier.
+    *
+    * @param string $res The result set identifier.
+    * @return bool True if the result set was successfully freed, false otherwise.
+    */
+	public function freeResult(string $res): bool
 	{
 		$reply = $this->exchange(['free_result', $res]);
 
-		if ($reply[0] === 'ok')
+		if ($reply[0] === 'ok') {
 			return true;
+        }
 		return false;
 	}
 }
