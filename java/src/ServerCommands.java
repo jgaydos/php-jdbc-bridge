@@ -35,8 +35,8 @@ public class ServerCommands {
     
     private ServerThread serverThread;
     private Connection conn = null;
-    private Hashtable results = new Hashtable();
-    
+    private Hashtable<String, ResultSet> results = new Hashtable<String, ResultSet>();
+
     /** Creates a new instance of ServerCommands */
     public ServerCommands(ServerThread serverThread) {
         
@@ -125,7 +125,7 @@ public class ServerCommands {
         
         if (conn != null && cmd.length == 2) {
             
-            ResultSet rs = (ResultSet)results.get(cmd[1]);
+            ResultSet rs = results.get(cmd[1]);
             
             if (rs != null) {
                 
